@@ -3,6 +3,17 @@ import { Resend } from 'resend';
 const resend = new Resend('re_Fv9XErnn_6enWkDVFDu9JMsdnqaBeVbNF');
 
 export default async function handler(req, res) {
+
+  // CORS
+  res.setHeader('Access-Control-Allow-Origin', 'https://southbostonlanding.com');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
