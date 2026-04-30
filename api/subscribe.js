@@ -8,12 +8,10 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  // Handle preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // Only allow POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -31,62 +29,89 @@ export default async function handler(req, res) {
   }
 
   const cleanEmail = email.trim().toLowerCase();
+  const cleanInterest = (interest || 'General').trim();
 
-  // Customer email
-  const customerTemplate = `
-  <!DOCTYPE html>
-  <html>
-  <body style="margin:0;padding:0;background-color:#F2F0EC;font-family:'Jost',Arial,sans-serif;">
-    <div style="padding:64px 20px;">
-      <div style="max-width:520px;margin:0 auto;background:#1E2D4A;padding:56px 52px 52px;text-align:center;">
-        <img src="https://southbostonlanding.com/south-boston-landing-logo-white.png" style="width:180px;margin-bottom:24px;" />
-        <h1 style="font-family:Georgia,serif;font-size:36px;font-style:italic;color:#fff;margin:0 0 24px;">You're in.</h1>
-        <p style="font-size:13px;line-height:1.9;color:#A8B8C9;">
-          Thank you for your interest in South Boston Landing.<br>
-          Someone from our team will be in touch with you shortly.
-        </p>
-      </div>
-      <p style="text-align:center;margin-top:28px;font-size:10px;letter-spacing:2px;color:#B7B0A3;">
-        South Boston Landing
+  // -------- OWNER TEMPLATE --------
+  const ownerTemplateRaw = `
+<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0; padding:0; background-color:#F2F0EC; font-family: Arial, Helvetica, sans-serif;">
+
+  <div style="padding:64px 20px;">
+    <div style="max-width:520px; margin:0 auto; background:#FFFFFF; padding:56px 52px 48px; border:1px solid #CFCBC2;">
+      
+      <img src="https://southbostonlanding.com/south-boston-landing-logo.png" width="200" style="display:block; margin:0 auto 40px;">
+
+      <h1 style="font-family: Georgia, serif; font-size:28px; font-style:italic; color:#1E2D4A; text-align:center; margin:0 0 14px;">
+        New Inquiry
+      </h1>
+
+      <div style="width:40px; height:2px; background:#C8A96A; margin:0 auto 20px;"></div>
+
+      <p style="font-size:13px; line-height:1.9; color:#B7B0A3; text-align:center; margin:0 0 28px;">
+        A new inquiry for South Boston Landing has been received.
       </p>
-    </div>
-  </body>
-  </html>
-  `;
 
-  // Owner email
-  const ownerTemplate = `
-  <!DOCTYPE html>
-  <html>
-  <body style="margin:0;padding:0;background-color:#F2F0EC;font-family:'Jost',Arial,sans-serif;">
-    <div style="padding:64px 20px;">
-      <div style="max-width:520px;margin:0 auto;background:#1E2D4A;padding:56px 52px 52px;text-align:center;">
-        <img src="https://southbostonlanding.com/south-boston-landing-logo-white.png" style="width:180px;margin-bottom:24px;" />
-        
-        <h1 style="font-family:Georgia,serif;font-size:32px;font-style:italic;color:#fff;margin-bottom:20px;">
-          New Inquiry
-        </h1>
+      <div style="font-size:14px; color:#B7B0A3; line-height:1.8;">
+        <div style="margin-bottom:18px;">
+          <div style="color:#1E2D4A; font-size:11px; text-transform:uppercase;">Email</div>
+          <div>{{email}}</div>
+        </div>
 
-        <p style="font-size:13px;color:#A8B8C9;">
-          A new inquiry has been received.
-        </p>
-
-        <div style="margin-top:28px;text-align:left;color:#fff;">
-          <p style="font-size:11px;text-transform:uppercase;color:#A8B8C9;">Email</p>
-          <p style="margin:0 0 12px;">${cleanEmail}</p>
-
-          <p style="font-size:11px;text-transform:uppercase;color:#A8B8C9;">Interest</p>
-          <p style="margin:0;">${interest || 'General'}</p>
+        <div>
+          <div style="color:#1E2D4A; font-size:11px; text-transform:uppercase;">Interest</div>
+          <div>{{interest}}</div>
         </div>
       </div>
 
-      <p style="text-align:center;margin-top:28px;font-size:10px;letter-spacing:2px;color:#B7B0A3;">
-        South Boston Landing
-      </p>
     </div>
-  </body>
-  </html>
-  `;
+
+    <p style="text-align:center; margin-top:28px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#B7B0A3;">
+      South Boston Landing
+    </p>
+  </div>
+
+</body>
+</html>
+`;
+
+  // Inject variables
+  const ownerTemplate = ownerTemplateRaw
+    .replace('{{email}}', cleanEmail)
+    .replace('{{interest}}', cleanInterest);
+
+  // -------- CUSTOMER TEMPLATE --------
+  const customerTemplate = `
+<!DOCTYPE html>
+<html lang="en">
+<body style="margin:0; padding:0; background-color:#F2F0EC; font-family: Arial, Helvetica, sans-serif;">
+
+  <div style="padding:64px 20px;">
+    <div style="max-width:520px; margin:0 auto; background:#FFFFFF; padding:56px 52px 48px; text-align:center; border:1px solid #CFCBC2;">
+      
+      <img src="https://southbostonlanding.com/south-boston-landing-logo.png" width="200" style="display:block; margin:0 auto 40px;">
+
+      <h1 style="font-family: Georgia, serif; font-size:28px; font-style:italic; color:#1E2D4A; margin:0 0 16px;">
+        You're in.
+      </h1>
+
+      <div style="width:40px; height:2px; background:#C8A96A; margin:0 auto 20px;"></div>
+
+      <p style="font-size:13px; line-height:1.9; color:#B7B0A3;">
+        Thank you for your interest in South Boston Landing.<br>
+        Someone from our team will be in touch with you shortly.
+      </p>
+
+    </div>
+
+    <p style="text-align:center; margin-top:28px; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#B7B0A3;">
+      South Boston Landing
+    </p>
+  </div>
+
+</body>
+</html>
+`;
 
   try {
     // Send to customer
