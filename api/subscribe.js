@@ -16,7 +16,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, interest } = req.body;
+  const { email, interest, name, message } = req.body;
 
   // Validation
   if (!email || typeof email !== 'string') {
@@ -24,12 +24,16 @@ export default async function handler(req, res) {
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   if (!emailRegex.test(email.trim())) {
     return res.status(400).json({ error: 'Invalid email address' });
   }
 
+  // Clean values
   const cleanEmail = email.trim().toLowerCase();
   const cleanInterest = (interest || 'General').trim();
+  const cleanName = name?.trim() || 'Not provided';
+  const cleanMessage = message?.trim() || 'Not provided';
 
   // -------- OWNER TEMPLATE --------
   const ownerTemplateRaw = `
@@ -53,15 +57,27 @@ export default async function handler(req, res) {
       </p>
 
       <div style="font-size:14px; color:#B7B0A3; line-height:1.8;">
+
+        <div style="margin-bottom:18px;">
+          <div style="color:#1E2D4A; font-size:11px; text-transform:uppercase;">Name</div>
+          <div>${cleanName}</div>
+        </div>
+
         <div style="margin-bottom:18px;">
           <div style="color:#1E2D4A; font-size:11px; text-transform:uppercase;">Email</div>
-          <div>{{email}}</div>
+          <div>${cleanEmail}</div>
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <div style="color:#1E2D4A; font-size:11px; text-transform:uppercase;">Interest</div>
+          <div>${cleanInterest}</div>
         </div>
 
         <div>
-          <div style="color:#1E2D4A; font-size:11px; text-transform:uppercase;">Interest</div>
-          <div>{{interest}}</div>
+          <div style="color:#1E2D4A; font-size:11px; text-transform:uppercase;">Message</div>
+          <div style="white-space:pre-line;">${cleanMessage}</div>
         </div>
+
       </div>
 
     </div>
@@ -74,11 +90,6 @@ export default async function handler(req, res) {
 </body>
 </html>
 `;
-
-  // Inject variables
-  const ownerTemplate = ownerTemplateRaw
-    .replace('{{email}}', cleanEmail)
-    .replace('{{interest}}', cleanInterest);
 
   // -------- CUSTOMER TEMPLATE --------
   const customerTemplate = `
@@ -114,21 +125,21 @@ export default async function handler(req, res) {
 `;
 
   try {
-    // Send to customer
+    // Send confirmation email to customer
     await resend.emails.send({
       from: 'South Boston Landing <contact@southbostonlanding.com>',
       to: cleanEmail,
-      subject: "You're in — South Boston Landing",
+      subject: "You're in. South Boston Landing",
       html: customerTemplate,
     });
 
-    // Send to owner
+    // Send inquiry email to owner
     await resend.emails.send({
       from: 'South Boston Landing <contact@southbostonlanding.com>',
       to: 'contact@southbostonlanding.com',
       reply_to: cleanEmail,
-      subject: 'New Inquiry — South Boston Landing',
-      html: ownerTemplate,
+      subject: 'New Inquiry. South Boston Landing',
+      html: ownerTemplateRaw,
     });
 
     return res.status(200).json({ success: true });
